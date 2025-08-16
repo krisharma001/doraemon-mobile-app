@@ -2,8 +2,8 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { HomeScreenProps } from '../types/components';
 import { useAppStore, useMessageStore, useSettingsStore } from '../stores';
-import { GradientBackground, useTheme, PermissionStatus } from '../components';
-import { usePermissions } from '../hooks';
+import { GradientBackground, useTheme, PermissionStatus, MicButton } from '../components';
+import { usePermissions, useMicButton } from '../hooks';
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { currentState, setCurrentState, hasPermissions } = useAppStore();
@@ -11,6 +11,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { settings, setTTSEnabled } = useSettingsStore();
   const { colors } = useTheme();
   const { hasPermission } = usePermissions();
+  const micButton = useMicButton();
 
   const handleTestStores = () => {
     // Test app state
@@ -57,11 +58,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             />
           ) : (
             <>
+              {/* Microphone Button */}
+              <View style={styles.micButtonContainer}>
+                <MicButton
+                  state={micButton.state}
+                  onPress={micButton.onPress}
+                  disabled={micButton.disabled}
+                />
+              </View>
+
+              {/* Status Information */}
+              <View style={styles.statusContainer}>
+                <Text style={[styles.statusText, { color: colors.primary }]}>
+                  {currentState === 'idle' && 'Ready to listen'}
+                  {currentState === 'listening' && 'Listening...'}
+                  {currentState === 'processing' && 'Processing...'}
+                </Text>
+              </View>
+
+              {/* Debug Info */}
               <View style={styles.storeInfo}>
-                <Text style={[styles.storeText, { color: colors.primary }]}>State: {currentState}</Text>
-                <Text style={[styles.storeText, { color: colors.primary }]}>Messages: {getMessageCount()}</Text>
-                <Text style={[styles.storeText, { color: colors.primary }]}>TTS: {settings.ttsEnabled ? 'ON' : 'OFF'}</Text>
-                <Text style={[styles.storeText, { color: colors.primary }]}>Mic: {hasPermissions ? 'GRANTED' : 'DENIED'}</Text>
+                <Text style={[styles.storeText, { color: colors.secondary }]}>State: {currentState}</Text>
+                <Text style={[styles.storeText, { color: colors.secondary }]}>Messages: {getMessageCount()}</Text>
+                <Text style={[styles.storeText, { color: colors.secondary }]}>TTS: {settings.ttsEnabled ? 'ON' : 'OFF'}</Text>
+                <Text style={[styles.storeText, { color: colors.secondary }]}>Mic: {hasPermissions ? 'GRANTED' : 'DENIED'}</Text>
               </View>
               
               <TouchableOpacity 
@@ -115,7 +135,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 40,
   },
   title: {
     fontSize: 32,
@@ -128,15 +149,30 @@ const styles = StyleSheet.create({
   },
   version: {
     fontSize: 14,
-    marginBottom: 32,
+    marginBottom: 20,
+  },
+  micButtonContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  statusContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  statusText: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   storeInfo: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   storeText: {
-    fontSize: 16,
-    marginBottom: 4,
+    fontSize: 12,
+    marginBottom: 2,
+    opacity: 0.7,
   },
   testButton: {
     backgroundColor: '#4a90e2',
