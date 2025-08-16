@@ -1,12 +1,12 @@
-import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAppStore, useMessageStore, useSettingsStore } from './src/stores';
+import { GradientBackground, ThemeProvider, ThemeToggle, useTheme } from './src/components';
 
-export default function App() {
+function AppContent() {
   const { currentState, setCurrentState } = useAppStore();
   const { addMessage, getMessageCount } = useMessageStore();
   const { settings, setTTSEnabled } = useSettingsStore();
+  const { colors } = useTheme();
 
   const handleTestStores = () => {
     // Test app state
@@ -23,54 +23,57 @@ export default function App() {
   };
 
   return (
-    <LinearGradient
-      colors={['#6a5acd', '#1a1a2e']}
-      style={styles.container}
-    >
+    <GradientBackground>
       <View style={styles.content}>
-        <Text style={styles.title}>Doraemon</Text>
-        <Text style={styles.subtitle}>AI Assistant</Text>
-        <Text style={styles.version}>v1.0.0</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>Doraemon</Text>
+        <Text style={[styles.subtitle, { color: colors.secondary }]}>AI Assistant</Text>
+        <Text style={[styles.version, { color: colors.tertiary }]}>v1.0.0</Text>
         
         <View style={styles.storeInfo}>
-          <Text style={styles.storeText}>State: {currentState}</Text>
-          <Text style={styles.storeText}>Messages: {getMessageCount()}</Text>
-          <Text style={styles.storeText}>TTS: {settings.ttsEnabled ? 'ON' : 'OFF'}</Text>
+          <Text style={[styles.storeText, { color: colors.primary }]}>State: {currentState}</Text>
+          <Text style={[styles.storeText, { color: colors.primary }]}>Messages: {getMessageCount()}</Text>
+          <Text style={[styles.storeText, { color: colors.primary }]}>TTS: {settings.ttsEnabled ? 'ON' : 'OFF'}</Text>
+          <Text style={[styles.storeText, { color: colors.primary }]}>Theme: {settings.theme.toUpperCase()}</Text>
         </View>
         
-        <TouchableOpacity style={styles.testButton} onPress={handleTestStores}>
-          <Text style={styles.testButtonText}>Test Stores</Text>
-        </TouchableOpacity>
-        
-        <StatusBar style="light" />
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.testButton} onPress={handleTestStores}>
+            <Text style={styles.testButtonText}>Test Stores</Text>
+          </TouchableOpacity>
+          
+          <ThemeToggle style={styles.themeToggle} />
+        </View>
       </View>
-    </LinearGradient>
+    </GradientBackground>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#ffffff',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 18,
-    color: '#b0b0b0',
     marginBottom: 4,
   },
   version: {
     fontSize: 14,
-    color: '#808080',
     marginBottom: 32,
   },
   storeInfo: {
@@ -79,8 +82,11 @@ const styles = StyleSheet.create({
   },
   storeText: {
     fontSize: 16,
-    color: '#ffffff',
     marginBottom: 4,
+  },
+  buttonContainer: {
+    alignItems: 'center',
+    gap: 16,
   },
   testButton: {
     backgroundColor: '#4a90e2',
@@ -92,5 +98,8 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  themeToggle: {
+    marginTop: 8,
   },
 });
