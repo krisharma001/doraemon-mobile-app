@@ -72,3 +72,8 @@ export type WebSocketMessage =
   | TranscriptMessage 
   | PartialTranscriptMessage 
   | AssistantResponseMessage;
+
+// Re-export all types from other files
+export * from './components';
+export * from './services';
+export * from './models';
