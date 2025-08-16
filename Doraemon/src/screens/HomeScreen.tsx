@@ -2,13 +2,15 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { HomeScreenProps } from '../types/components';
 import { useAppStore, useMessageStore, useSettingsStore } from '../stores';
-import { GradientBackground, useTheme } from '../components';
+import { GradientBackground, useTheme, PermissionStatus } from '../components';
+import { usePermissions } from '../hooks';
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const { currentState, setCurrentState } = useAppStore();
+  const { currentState, setCurrentState, hasPermissions } = useAppStore();
   const { addMessage, getMessageCount } = useMessageStore();
   const { settings, setTTSEnabled } = useSettingsStore();
   const { colors } = useTheme();
+  const { hasPermission } = usePermissions();
 
   const handleTestStores = () => {
     // Test app state
@@ -47,25 +49,39 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <Text style={[styles.subtitle, { color: colors.secondary }]}>AI Assistant</Text>
           <Text style={[styles.version, { color: colors.tertiary }]}>v1.0.0</Text>
           
-          <View style={styles.storeInfo}>
-            <Text style={[styles.storeText, { color: colors.primary }]}>State: {currentState}</Text>
-            <Text style={[styles.storeText, { color: colors.primary }]}>Messages: {getMessageCount()}</Text>
-            <Text style={[styles.storeText, { color: colors.primary }]}>TTS: {settings.ttsEnabled ? 'ON' : 'OFF'}</Text>
-          </View>
-          
-          <TouchableOpacity 
-            style={styles.testButton} 
-            onPress={handleTestStores}
-            accessibilityRole="button"
-            accessibilityLabel="Test store functionality"
-          >
-            <Text style={styles.testButtonText}>Test Stores</Text>
-          </TouchableOpacity>
+          {!hasPermission ? (
+            <PermissionStatus 
+              onPermissionGranted={() => {
+                console.log('Permission granted, ready for voice interaction');
+              }}
+            />
+          ) : (
+            <>
+              <View style={styles.storeInfo}>
+                <Text style={[styles.storeText, { color: colors.primary }]}>State: {currentState}</Text>
+                <Text style={[styles.storeText, { color: colors.primary }]}>Messages: {getMessageCount()}</Text>
+                <Text style={[styles.storeText, { color: colors.primary }]}>TTS: {settings.ttsEnabled ? 'ON' : 'OFF'}</Text>
+                <Text style={[styles.storeText, { color: colors.primary }]}>Mic: {hasPermissions ? 'GRANTED' : 'DENIED'}</Text>
+              </View>
+              
+              <TouchableOpacity 
+                style={styles.testButton} 
+                onPress={handleTestStores}
+                accessibilityRole="button"
+                accessibilityLabel="Test store functionality"
+              >
+                <Text style={styles.testButtonText}>Test Stores</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: colors.tertiary }]}>
-            Tap the microphone to start talking
+            {hasPermission 
+              ? 'Tap the microphone to start talking' 
+              : 'Grant microphone permission to continue'
+            }
           </Text>
         </View>
       </View>

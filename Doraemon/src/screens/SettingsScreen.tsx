@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { SettingsScreenProps } from '../types/components';
 import { useSettingsStore } from '../stores';
-import { GradientBackground, useTheme, ThemeToggle } from '../components';
+import { GradientBackground, useTheme, ThemeToggle, PermissionStatus } from '../components';
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { 
@@ -53,6 +53,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) =>
         </View>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Permissions</Text>
+            <PermissionStatus showDetails={true} />
+          </View>
+
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.primary }]}>Appearance</Text>
             
