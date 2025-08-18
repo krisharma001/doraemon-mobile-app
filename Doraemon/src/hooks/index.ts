@@ -2,3 +2,4 @@
 
 export { usePermissions } from './usePermissions';
 export { useMicButton } from './useMicButton';
+export { useAudioRecording } from './useAudioRecording';

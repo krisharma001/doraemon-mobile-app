@@ -1,6 +1,7 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useAppStore } from '../stores';
 import { usePermissions } from './usePermissions';
+import { useAudioRecording } from './useAudioRecording';
 
 interface UseMicButtonReturn {
   state: 'idle' | 'listening' | 'processing';
@@ -14,13 +15,26 @@ export const useMicButton = (): UseMicButtonReturn => {
     currentState, 
     setCurrentState, 
     setError,
-    clearError 
+    clearError,
+    setAudioLevels 
   } = useAppStore();
   
   const { hasPermission, requestPermission } = usePermissions();
+  const { 
+    startRecording, 
+    stopRecording, 
+    cancelRecording, 
+    audioLevels,
+    isRecording 
+  } = useAudioRecording();
 
   const canRecord = hasPermission && currentState !== 'processing';
   const disabled = !hasPermission || currentState === 'processing';
+
+  // Sync audio levels with app store
+  useEffect(() => {
+    setAudioLevels(audioLevels);
+  }, [audioLevels, setAudioLevels]);
 
   const handlePress = useCallback(async () => {
     try {
@@ -43,22 +57,17 @@ export const useMicButton = (): UseMicButtonReturn => {
       // Handle state transitions
       switch (currentState) {
         case 'idle':
-          // Start listening
+          // Start listening and recording
           setCurrentState('listening');
-          console.log('Started listening...');
+          const recordingStarted = await startRecording();
           
-          // TODO: In the next task, this will start actual audio recording
-          // For now, simulate a transition to processing after 3 seconds
-          setTimeout(() => {
-            setCurrentState('processing');
-            console.log('Processing audio...');
-            
-            // Simulate processing completion
-            setTimeout(() => {
-              setCurrentState('idle');
-              console.log('Returned to idle state');
-            }, 2000);
-          }, 3000);
+          if (!recordingStarted) {
+            // Failed to start recording, return to idle
+            setCurrentState('idle');
+            return;
+          }
+          
+          console.log('Started listening and recording...');
           break;
 
         case 'listening':
@@ -66,16 +75,33 @@ export const useMicButton = (): UseMicButtonReturn => {
           setCurrentState('processing');
           console.log('Stopped listening, processing...');
           
-          // Simulate processing completion
-          setTimeout(() => {
+          const audioBuffer = await stopRecording();
+          
+          if (audioBuffer) {
+            console.log('Audio recorded successfully, size:', audioBuffer.byteLength);
+            
+            // TODO: In the next tasks, this will be sent to the backend for processing
+            // For now, simulate processing completion
+            setTimeout(() => {
+              setCurrentState('idle');
+              console.log('Processing complete, returned to idle');
+            }, 2000);
+          } else {
+            // Failed to get audio, return to idle
             setCurrentState('idle');
-            console.log('Processing complete, returned to idle');
-          }, 2000);
+            setError({
+              type: 'audio',
+              message: 'Failed to record audio',
+              timestamp: Date.now(),
+            });
+          }
           break;
 
         case 'processing':
-          // Cannot interrupt processing
-          console.log('Cannot interrupt processing');
+          // Cannot interrupt processing, but allow cancellation
+          console.log('Processing in progress, cancelling...');
+          await cancelRecording();
+          setCurrentState('idle');
           break;
 
         default:

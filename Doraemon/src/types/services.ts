@@ -2,7 +2,7 @@
 
 export interface AudioManager {
   startRecording(): Promise<void>;
-  stopRecording(): Promise<AudioBuffer>;
+  stopRecording(): Promise<ArrayBuffer>;
   getAudioLevels(): number[];
   isRecording(): boolean;
   requestPermissions(): Promise<boolean>;
