@@ -2,8 +2,8 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { HomeScreenProps } from '../types/components';
 import { useAppStore, useMessageStore, useSettingsStore } from '../stores';
-import { GradientBackground, useTheme, PermissionStatus, MicButton } from '../components';
-import { usePermissions, useMicButton } from '../hooks';
+import { GradientBackground, useTheme, PermissionStatus, MicButton, WaveformVisualizer } from '../components';
+import { usePermissions, useMicButton, useWaveform } from '../hooks';
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { currentState, setCurrentState, hasPermissions } = useAppStore();
@@ -12,6 +12,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { colors } = useTheme();
   const { hasPermission } = usePermissions();
   const micButton = useMicButton();
+  const waveform = useWaveform();
 
   const handleTestStores = () => {
     // Test app state
@@ -58,13 +59,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             />
           ) : (
             <>
-              {/* Microphone Button */}
+              {/* Microphone Button and Waveform */}
               <View style={styles.micButtonContainer}>
-                <MicButton
-                  state={micButton.state}
-                  onPress={micButton.onPress}
-                  disabled={micButton.disabled}
-                />
+                {waveform.isActive ? (
+                  <WaveformVisualizer
+                    audioLevels={waveform.audioLevels}
+                    isActive={waveform.isActive}
+                    style={styles.waveform}
+                  />
+                ) : (
+                  <MicButton
+                    state={micButton.state}
+                    onPress={micButton.onPress}
+                    disabled={micButton.disabled}
+                  />
+                )}
               </View>
 
               {/* Status Information */}
@@ -74,6 +83,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   {currentState === 'listening' && 'Listening...'}
                   {currentState === 'processing' && 'Processing...'}
                 </Text>
+                
+                {waveform.isActive && (
+                  <View style={styles.waveformStats}>
+                    <Text style={[styles.statText, { color: colors.secondary }]}>
+                      Avg: {(waveform.averageLevel * 100).toFixed(0)}%
+                    </Text>
+                    <Text style={[styles.statText, { color: colors.secondary }]}>
+                      Peak: {(waveform.peakLevel * 100).toFixed(0)}%
+                    </Text>
+                    {waveform.isClipping && (
+                      <Text style={[styles.statText, { color: '#f44336' }]}>
+                        CLIPPING
+                      </Text>
+                    )}
+                  </View>
+                )}
               </View>
 
               {/* Debug Info */}
@@ -155,6 +180,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
+    minHeight: 120,
+  },
+  waveform: {
+    marginVertical: 20,
+  },
+  waveformStats: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+    marginTop: 8,
+  },
+  statText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   statusContainer: {
     alignItems: 'center',
