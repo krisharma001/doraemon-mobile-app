@@ -58,11 +58,15 @@ export const useMicButton = (): UseMicButtonReturn => {
       switch (currentState) {
         case 'idle':
           // Start listening and recording
+          console.log('MicButton: Starting recording...');
           setCurrentState('listening');
           const recordingStarted = await startRecording();
           
+          console.log('MicButton: Recording started result:', recordingStarted);
+          
           if (!recordingStarted) {
             // Failed to start recording, return to idle
+            console.log('MicButton: Failed to start recording, returning to idle');
             setCurrentState('idle');
             return;
           }
@@ -123,6 +127,9 @@ export const useMicButton = (): UseMicButtonReturn => {
     setError,
     clearError,
     requestPermission,
+    startRecording,
+    stopRecording,
+    cancelRecording,
   ]);
 
   return {

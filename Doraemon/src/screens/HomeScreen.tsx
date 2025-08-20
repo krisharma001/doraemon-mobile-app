@@ -1,41 +1,47 @@
 import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { HomeScreenProps } from '../types/components';
-import { useAppStore, useMessageStore, useSettingsStore } from '../stores';
+import { useAppStore } from '../stores';
 import { GradientBackground, useTheme, PermissionStatus, MicButton, WaveformVisualizer } from '../components';
-import { usePermissions, useMicButton, useWaveform } from '../hooks';
+import { usePermissions, useMicButton, useAudioRecording } from '../hooks';
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const { currentState, setCurrentState, hasPermissions } = useAppStore();
-  const { addMessage, getMessageCount } = useMessageStore();
-  const { settings, setTTSEnabled } = useSettingsStore();
+  const { currentState, setCurrentState, settings, toggleTTS, setTheme, hasPermissions } = useAppStore();
   const { colors } = useTheme();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, requestPermission } = usePermissions();
   const micButton = useMicButton();
-  const waveform = useWaveform();
+  const { isRecording, audioLevels, startRecording, stopRecording } = useAudioRecording();
 
   const handleTestStores = () => {
-    // Test app state
+    // Test app state transitions
     setCurrentState(currentState === 'idle' ? 'listening' : 'idle');
     
-    // Test message store
-    addMessage({
-      role: 'user',
-      text: `Test message ${getMessageCount() + 1}`,
-    });
-    
-    // Test settings store
-    setTTSEnabled(!settings.ttsEnabled);
+    // Test settings toggle
+    toggleTTS();
+  };
+
+  const handleToggleTheme = () => {
+    setTheme(settings.theme === 'dark' ? 'light' : 'dark');
   };
 
   const navigateToSettings = () => {
-    navigation.navigate('Settings');
+    navigation?.navigate('Settings');
   };
 
   return (
     <GradientBackground>
       <View style={styles.container}>
         <View style={styles.header}>
+          <TouchableOpacity 
+            style={[styles.themeButton, { borderColor: colors.secondary }]}
+            onPress={handleToggleTheme}
+            accessibilityRole="button"
+            accessibilityLabel="Toggle theme"
+          >
+            <Text style={[styles.settingsButtonText, { color: colors.primary }]}>
+              {settings.theme === 'dark' ? '☀️' : '🌙'}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.settingsButton, { borderColor: colors.secondary }]}
             onPress={navigateToSettings}
@@ -59,21 +65,31 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             />
           ) : (
             <>
-              {/* Microphone Button and Waveform */}
+              {/* Microphone Button */}
               <View style={styles.micButtonContainer}>
-                {waveform.isActive ? (
-                  <WaveformVisualizer
-                    audioLevels={waveform.audioLevels}
-                    isActive={waveform.isActive}
-                    style={styles.waveform}
-                  />
-                ) : (
-                  <MicButton
-                    state={micButton.state}
-                    onPress={micButton.onPress}
-                    disabled={micButton.disabled}
-                  />
-                )}
+                <MicButton
+                  state={micButton.state}
+                  onPress={micButton.onPress}
+                  disabled={micButton.disabled}
+                />
+              </View>
+
+              {/* Waveform Visualizer - Always visible for debugging */}
+              <View style={styles.waveform}>
+                <WaveformVisualizer
+                  audioLevels={audioLevels || []}
+                  isActive={isRecording}
+                />
+              </View>
+
+              {/* Debug: Show recording state */}
+              <View style={styles.debugContainer}>
+                <Text style={[styles.debugText, { color: colors.tertiary }]}>
+                  Debug: isRecording = {isRecording ? 'true' : 'false'}
+                </Text>
+                <Text style={[styles.debugText, { color: colors.tertiary }]}>
+                  AudioLevels: {audioLevels ? audioLevels.length : 'null'}
+                </Text>
               </View>
 
               {/* Status Information */}
@@ -82,31 +98,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                   {currentState === 'idle' && 'Ready to listen'}
                   {currentState === 'listening' && 'Listening...'}
                   {currentState === 'processing' && 'Processing...'}
+                  {currentState === 'responding' && 'Responding...'}
                 </Text>
-                
-                {waveform.isActive && (
-                  <View style={styles.waveformStats}>
-                    <Text style={[styles.statText, { color: colors.secondary }]}>
-                      Avg: {(waveform.averageLevel * 100).toFixed(0)}%
-                    </Text>
-                    <Text style={[styles.statText, { color: colors.secondary }]}>
-                      Peak: {(waveform.peakLevel * 100).toFixed(0)}%
-                    </Text>
-                    {waveform.isClipping && (
-                      <Text style={[styles.statText, { color: '#f44336' }]}>
-                        CLIPPING
-                      </Text>
-                    )}
-                  </View>
-                )}
               </View>
 
               {/* Debug Info */}
               <View style={styles.storeInfo}>
                 <Text style={[styles.storeText, { color: colors.secondary }]}>State: {currentState}</Text>
-                <Text style={[styles.storeText, { color: colors.secondary }]}>Messages: {getMessageCount()}</Text>
+                <Text style={[styles.storeText, { color: colors.secondary }]}>Theme: {settings.theme}</Text>
                 <Text style={[styles.storeText, { color: colors.secondary }]}>TTS: {settings.ttsEnabled ? 'ON' : 'OFF'}</Text>
-                <Text style={[styles.storeText, { color: colors.secondary }]}>Mic: {hasPermissions ? 'GRANTED' : 'DENIED'}</Text>
+                <Text style={[styles.storeText, { color: colors.secondary }]}>ASR: {settings.asrBackend}</Text>
+                <Text style={[styles.storeText, { color: colors.secondary }]}>Mic: {hasPermission ? 'GRANTED' : 'DENIED'}</Text>
+                <Text style={[styles.storeText, { color: colors.secondary }]}>Recording: {isRecording ? 'YES' : 'NO'}</Text>
+                <Text style={[styles.storeText, { color: colors.secondary }]}>Audio Levels: {audioLevels.length}</Text>
+                <Text style={[styles.storeText, { color: colors.secondary }]}>Waveform: {isRecording ? 'ACTIVE' : 'INACTIVE'}</Text>
               </View>
               
               <TouchableOpacity 
@@ -119,15 +124,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               </TouchableOpacity>
             </>
           )}
-        </View>
 
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.tertiary }]}>
-            {hasPermission 
-              ? 'Tap the microphone to start talking' 
-              : 'Grant microphone permission to continue'
-            }
-          </Text>
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: colors.tertiary }]}>
+              {hasPermission 
+                ? 'Permissions & Navigation working!' 
+                : 'Grant microphone permission to continue'
+              }
+            </Text>
+          </View>
         </View>
       </View>
     </GradientBackground>
@@ -145,8 +150,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginBottom: 20,
+    gap: 10,
   },
   settingsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -163,6 +177,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 40,
   },
+  micButtonContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    minHeight: 120,
+  },
+  waveform: {
+    marginVertical: 20,
+    alignItems: 'center',
+  },
+  debugContainer: {
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  debugText: {
+    fontSize: 10,
+    opacity: 0.7,
+  },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
@@ -175,25 +207,6 @@ const styles = StyleSheet.create({
   version: {
     fontSize: 14,
     marginBottom: 20,
-  },
-  micButtonContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    minHeight: 120,
-  },
-  waveform: {
-    marginVertical: 20,
-  },
-  waveformStats: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-    marginTop: 8,
-  },
-  statText: {
-    fontSize: 12,
-    fontWeight: '500',
   },
   statusContainer: {
     alignItems: 'center',
@@ -218,6 +231,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    marginVertical: 10,
   },
   testButtonText: {
     color: '#ffffff',

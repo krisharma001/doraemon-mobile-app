@@ -30,35 +30,40 @@ export const useAudioRecording = (): UseAudioRecordingReturn => {
   const statusInterval = useRef<NodeJS.Timeout | null>(null);
   const levelsInterval = useRef<NodeJS.Timeout | null>(null);
 
+  // Debug: Log when isRecording changes
+  useEffect(() => {
+    console.log('useAudioRecording: isRecording changed to:', isRecording);
+  }, [isRecording]);
+
   // Update audio levels periodically
   const updateAudioLevels = useCallback(() => {
-    if (isRecording) {
-      const levels = audioManager.getAudioLevels();
-      setAudioLevels(levels);
-    }
-  }, [isRecording, audioManager]);
+    const levels = audioManager.getAudioLevels();
+    setAudioLevels(levels);
+  }, [audioManager]);
 
   // Update recording status periodically
   const updateRecordingStatus = useCallback(async () => {
-    if (isRecording) {
-      try {
-        const status = await audioManager.getRecordingStatus();
-        setRecordingStatus(status);
-        setDuration(status.duration);
-      } catch (error) {
-        console.error('Error updating recording status:', error);
-      }
+    try {
+      const status = await audioManager.getRecordingStatus();
+      setRecordingStatus(status);
+      setDuration(status.duration);
+    } catch (error) {
+      console.error('Error updating recording status:', error);
     }
-  }, [isRecording, audioManager]);
+  }, [audioManager]);
 
   // Start periodic updates when recording
   useEffect(() => {
     if (isRecording) {
       // Update audio levels every 100ms for smooth visualization
-      levelsInterval.current = setInterval(updateAudioLevels, 100);
+      levelsInterval.current = setInterval(() => {
+        updateAudioLevels();
+      }, 100);
       
       // Update status every 500ms
-      statusInterval.current = setInterval(updateRecordingStatus, 500);
+      statusInterval.current = setInterval(() => {
+        updateRecordingStatus();
+      }, 500);
     } else {
       // Clear intervals when not recording
       if (levelsInterval.current) {
@@ -69,6 +74,8 @@ export const useAudioRecording = (): UseAudioRecordingReturn => {
         clearInterval(statusInterval.current);
         statusInterval.current = null;
       }
+      // Clear audio levels when not recording
+      setAudioLevels([]);
     }
 
     return () => {
@@ -83,10 +90,12 @@ export const useAudioRecording = (): UseAudioRecordingReturn => {
 
   const startRecording = useCallback(async (): Promise<boolean> => {
     try {
+      console.log('useAudioRecording: startRecording called');
       clearError();
       
       // Check permissions first
       const hasPermission = await audioManager.requestPermissions();
+      console.log('useAudioRecording: hasPermission =', hasPermission);
       if (!hasPermission) {
         setError({
           type: 'permission',
@@ -97,12 +106,14 @@ export const useAudioRecording = (): UseAudioRecordingReturn => {
       }
 
       // Start recording
+      console.log('useAudioRecording: calling audioManager.startRecording()');
       await audioManager.startRecording();
+      console.log('useAudioRecording: setting isRecording to true');
       setIsRecording(true);
       setDuration(0);
       setAudioLevels([]);
       
-      console.log('Recording started successfully');
+      console.log('Recording started successfully, isRecording should be true');
       return true;
     } catch (error) {
       console.error('Failed to start recording:', error);
@@ -166,11 +177,15 @@ export const useAudioRecording = (): UseAudioRecordingReturn => {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (isRecording) {
-        cancelRecording();
+      // Cleanup intervals on unmount
+      if (levelsInterval.current) {
+        clearInterval(levelsInterval.current);
+      }
+      if (statusInterval.current) {
+        clearInterval(statusInterval.current);
       }
     };
-  }, [isRecording, cancelRecording]);
+  }, []);
 
   return {
     isRecording,

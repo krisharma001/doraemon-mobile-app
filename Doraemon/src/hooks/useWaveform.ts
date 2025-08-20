@@ -67,19 +67,11 @@ export const useWaveform = (): UseWaveformReturn => {
     if (isActive && storeAudioLevels.length > 0) {
       processAudioLevels(storeAudioLevels);
     } else if (!isActive) {
-      // Gradually fade out when not active
-      const fadeOutLevels = processedLevels.map(level => level * 0.8);
-      setProcessedLevels(fadeOutLevels);
-      
-      // Clear after fade out
-      setTimeout(() => {
-        if (!isActive) {
-          setProcessedLevels([]);
-          setAverageLevel(0);
-        }
-      }, 500);
+      // Clear immediately when not active
+      setProcessedLevels([]);
+      setAverageLevel(0);
     }
-  }, [storeAudioLevels, isActive, processAudioLevels, processedLevels]);
+  }, [storeAudioLevels, isActive, processAudioLevels]);
 
   // Reset waveform data
   const resetWaveform = useCallback(() => {
