@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { HomeScreenProps } from '../types/components';
 import { useAppStore } from '../stores';
-import { GradientBackground, useTheme, PermissionStatus, MicButton, WaveformVisualizer } from '../components';
+import { GradientBackground, useTheme, PermissionStatus, MorphingMicWaveform } from '../components';
 import { usePermissions, useMicButton, useAudioRecording } from '../hooks';
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
@@ -65,20 +65,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             />
           ) : (
             <>
-              {/* Microphone Button */}
+              {/* Morphing Microphone to Waveform */}
               <View style={styles.micButtonContainer}>
-                <MicButton
-                  state={micButton.state}
-                  onPress={micButton.onPress}
+                <MorphingMicWaveform
+                  micState={micButton.state}
+                  onMicPress={micButton.onPress}
                   disabled={micButton.disabled}
-                />
-              </View>
-
-              {/* Waveform Visualizer - Always visible for debugging */}
-              <View style={styles.waveform}>
-                <WaveformVisualizer
                   audioLevels={audioLevels || []}
-                  isActive={isRecording}
+                  isRecording={isRecording}
                 />
               </View>
 

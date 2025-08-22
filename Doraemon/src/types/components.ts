@@ -17,8 +17,10 @@ export interface SettingsScreenProps {
   navigation: NavigationProp<RootStackParamList, 'Settings'>;
 }
 
+export type MicButtonState = 'idle' | 'listening' | 'processing';
+
 export interface MicButtonProps {
-  state: 'idle' | 'listening' | 'processing';
+  state: MicButtonState;
   onPress: () => void;
   disabled?: boolean;
 }

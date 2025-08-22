@@ -132,8 +132,22 @@ export const useMicButton = (): UseMicButtonReturn => {
     cancelRecording,
   ]);
 
+  // Map app state to mic button state
+  const getMicButtonState = (): 'idle' | 'listening' | 'processing' => {
+    switch (currentState) {
+      case 'listening':
+        return 'listening';
+      case 'processing':
+      case 'responding':
+        return 'processing';
+      case 'idle':
+      default:
+        return 'idle';
+    }
+  };
+
   return {
-    state: currentState,
+    state: getMicButtonState(),
     disabled,
     onPress: handlePress,
     canRecord,
